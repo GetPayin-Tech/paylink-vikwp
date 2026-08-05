@@ -23,7 +23,7 @@ jobs:
       matrix:
         php: ['7.2', '7.4', '8.0', '8.2', '8.4']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP ${{ matrix.php }}
         uses: shivammathur/setup-php@v2
@@ -43,7 +43,7 @@ jobs:
     name: signature self-check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
