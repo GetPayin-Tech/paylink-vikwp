@@ -106,7 +106,18 @@ Static checks that run anywhere:
 ```bash
 # Lint every PHP file
 find . -name '*.php' -exec php -l {} \;
+
+# Verify the signing contract against the shared golden vectors
+php tests/signature-check.php
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — in particular the note on signed-field
+ordering, which is the one thing that must stay in lockstep with the server.
+
+Security issues: see [SECURITY.md](SECURITY.md). Please do not open a public
+issue for a vulnerability.
 
 ## License
 

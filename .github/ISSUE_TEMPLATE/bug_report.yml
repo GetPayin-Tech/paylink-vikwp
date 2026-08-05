@@ -1,0 +1,76 @@
+name: Bug report
+description: Report a defect in the PayLink VikWP plugin
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. For a **security vulnerability**, do not use this form — report it privately per the [security policy](https://github.com/GetPayin-Tech/paylink-vikwp/security/advisories/new).
+
+        Never paste a real `hash_token`, `auth_token`, card number, or CVV into this issue.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: The installed version of PayLink for VikWP (see the Plugins screen).
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: vik-plugin
+    attributes:
+      label: Vik plugin
+      description: Which Vik plugin were you paying through?
+      options:
+        - VikBooking
+        - VikRentCar
+        - VikRentItems
+        - VikAppointments
+        - VikRestaurants
+    validations:
+      required: true
+  - type: input
+    id: vik-version
+    attributes:
+      label: Vik plugin version
+      description: The version of the Vik plugin selected above.
+      placeholder: 1.7.0
+    validations:
+      required: true
+  - type: input
+    id: env-versions
+    attributes:
+      label: WordPress and PHP versions
+      description: e.g. WordPress 6.5, PHP 8.2.
+      placeholder: WordPress 6.5, PHP 8.2
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug — where in the flow it occurs (checkout redirect, webhook confirmation, admin settings) and what went wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The minimal steps that trigger the bug. Redact all tokens and card data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: Any error message, PHP notice, or transaction log line. Review it for secrets before pasting.
+      render: shell
+    validations:
+      required: false
