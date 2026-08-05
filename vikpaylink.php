@@ -1,14 +1,18 @@
 <?php
 /*
 Plugin Name:  PayLink for VikWP
+Plugin URI:   https://github.com/GetPayin-Tech/paylink-vikwp
 Description:  PayLink / GetPayIn integration to collect payments through the Vik plugins (VikBooking, VikRentCar, VikRentItems, VikAppointments, VikRestaurants).
-Version:      1.1.0
+Version:      1.1.1
+Requires at least: 5.6
+Requires PHP: 7.2
 Author:       GetPayIn
 Author URI:   https://pay.getpayin.com
 License:      GPL2
 License URI:  https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain:  vikpaylink
 Domain Path:  /languages
+Update URI:   https://github.com/GetPayin-Tech/paylink-vikwp
 */
 
 // No direct access
@@ -19,7 +23,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'utils.php';
 
 define('VIKPAYLINK_LANG', basename(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'languages');
 
-define('VIKPAYLINKVERSION', '1.1.0');
+define('VIKPAYLINKVERSION', '1.1.1');
 
 add_action('init', function () {
     JFactory::getLanguage()->load('vikpaylink', VIKPAYLINK_LANG);
