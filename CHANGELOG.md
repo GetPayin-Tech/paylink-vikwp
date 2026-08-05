@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0]
+
+### Changed
+
+- Rebranded the plugin display name and all user-facing copy from "PayLink" to **GetPayIn** (plugin name, admin labels, checkout messages, README). Internal identifiers — the `paylink` gateway id, class names, text domain `vikpaylink`, and the repository — are unchanged, so existing configurations keep working.
+
 ## [1.1.1]
 
 ### Added
@@ -24,7 +30,7 @@ All notable changes to this project are documented here. The format is based on
 
 ### Changed
 
-- Signed request builder now mirrors the full server field order shared with the official PayLink SDKs; new golden vectors and builder-order assertions cover it.
+- Signed request builder now mirrors the full server field order shared with the official GetPayIn SDKs; new golden vectors and builder-order assertions cover it.
 
 ### Removed
 
@@ -32,12 +38,12 @@ All notable changes to this project are documented here. The format is based on
 
 ## [1.0.0]
 
-First public release of the PayLink payment gateway for the VikWP (E4J) plugins.
+First public release of the GetPayIn payment gateway for the VikWP (E4J) plugins.
 
 ### Added
 
 - Support for all five Vik plugins: VikBooking, VikRentCar, VikRentItems, VikAppointments, VikRestaurants.
-- Hosted PayLink checkout via the v2 integration API (`/api/v2/integration/init`) with an idempotency key per order.
+- Hosted GetPayIn checkout via the v2 integration API (`/api/v2/integration/init`) with an idempotency key per order.
 - Capture or Authorize payment actions, plus a test-mode toggle for sandbox credentials.
 - Fail-closed HMAC-SHA256 webhook verification (`hash_equals`); the `hash_token` signing secret never reaches the browser.
 - Order total persisted to a transient so the amount-less webhook can confirm the exact total.

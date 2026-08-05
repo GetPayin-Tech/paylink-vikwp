@@ -19,6 +19,6 @@ The latest release receives security fixes.
 
 ## What this plugin does — and does not — do for you
 
-- **Card data never touches your server.** Payment is completed on PayLink's hosted checkout; the plugin only redirects to it and confirms the signed webhook. Do not add code that collects raw card data in the Vik checkout.
-- **Webhook replay protection.** PayLink webhook signatures carry no timestamp or nonce, so a valid payload stays valid forever. Signature verification proves authenticity, not freshness. The gateway confirms an order once and Vik ignores repeat confirmations; if you extend the callback handling, key your own idempotency on `invoice_id`.
-- **Transport security.** Your integration's return and webhook URLs must be **HTTPS** on the registered Origin domain. The plugin does not downgrade or bypass TLS verification when calling PayLink.
+- **Card data never touches your server.** Payment is completed on GetPayIn's hosted checkout; the plugin only redirects to it and confirms the signed webhook. Do not add code that collects raw card data in the Vik checkout.
+- **Webhook replay protection.** GetPayIn webhook signatures carry no timestamp or nonce, so a valid payload stays valid forever. Signature verification proves authenticity, not freshness. The gateway confirms an order once and Vik ignores repeat confirmations; if you extend the callback handling, key your own idempotency on `invoice_id`.
+- **Transport security.** Your integration's return and webhook URLs must be **HTTPS** on the registered Origin domain. The plugin does not downgrade or bypass TLS verification when calling GetPayIn.

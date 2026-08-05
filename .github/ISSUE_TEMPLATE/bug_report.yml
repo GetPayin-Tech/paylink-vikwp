@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a defect in the PayLink VikWP plugin
+description: Report a defect in the GetPayIn VikWP plugin
 labels: ['bug']
 body:
   - type: markdown
@@ -12,7 +12,7 @@ body:
     id: plugin-version
     attributes:
       label: Plugin version
-      description: The installed version of PayLink for VikWP (see the Plugins screen).
+      description: The installed version of GetPayIn for VikWP (see the Plugins screen).
       placeholder: 1.0.0
     validations:
       required: true

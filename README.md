@@ -1,14 +1,14 @@
-# @getpayin-tech/paylink-vikwp
+# GetPayIn for VikWP
 
 ![WordPress](https://img.shields.io/badge/WordPress-5.6%2B-21759b)
 ![VikWP](https://img.shields.io/badge/VikWP-E4J-2a6fdb)
 ![PHP](https://img.shields.io/badge/PHP-7.2%2B-777bb4)
 ![License](https://img.shields.io/badge/license-GPL--2.0--or--later-green)
 
-PayLink payment gateway for the **VikWP** (E4J) plugins. It sends customers to
-PayLink's hosted, PCI-compliant checkout (Apple Pay, Google Pay, Visa,
+GetPayIn payment gateway for the **VikWP** (E4J) plugins. It sends customers to
+GetPayIn's hosted, PCI-compliant checkout (Apple Pay, Google Pay, Visa,
 Mastercard), then confirms the booking from a signed webhook — so card data
-never touches your site. Built on the PayLink **v2** integration API, it computes
+never touches your site. Built on the GetPayIn **v2** integration API, it computes
 the order-sensitive HMAC-SHA256 signatures for you and keeps them in lockstep
 with the server.
 
@@ -22,7 +22,7 @@ Works with all five Vik plugins:
 
 ## Features
 
-- Hosted checkout redirect (`beginTransaction` → PayLink) with idempotent invoice creation
+- Hosted checkout redirect (`beginTransaction` → GetPayIn) with idempotent invoice creation
 - Capture now, or **authorize** and capture later from the dashboard
 - Fixed **installments** (2–24) on the hosted checkout
 - **Recurring subscriptions** — creates a mandate and charges the order total every cycle
@@ -31,7 +31,7 @@ Works with all five Vik plugins:
 - Per-request **return & webhook URLs** — no dashboard round-trip
 - One shared gateway class across every Vik component
 
-> **Card data never reaches your server.** Payment is completed on PayLink's
+> **Card data never reaches your server.** Payment is completed on GetPayIn's
 > hosted checkout. Your `hash_token` is a signing secret — keep it on the server
 > and out of logs; the plugin never sends it to the browser.
 
@@ -40,7 +40,7 @@ Works with all five Vik plugins:
 - WordPress **5.6+**
 - Any Vik plugin: VikBooking, VikRentCar, VikRentItems, VikAppointments, or VikRestaurants
 - PHP **7.2+** with the cURL extension
-- A PayLink account with an **integration** (auth token + hash token)
+- A GetPayIn account with an **integration** (auth token + hash token)
 
 ## Installation
 
@@ -48,19 +48,19 @@ Works with all five Vik plugins:
    named `vikpaylink`).
 2. In WordPress, go to **Plugins → Add New → Upload Plugin**, choose the ZIP, and
    **Install** then **Activate**.
-3. The PayLink gateway now appears in the payment list of every installed Vik
+3. The GetPayIn gateway now appears in the payment list of every installed Vik
    plugin.
 
 ## Configuration
 
 In your Vik plugin, open **Payments** (e.g. VikBooking → *Payments*), add or edit
-the **PayLink** gateway, and fill in:
+the **GetPayIn** gateway, and fill in:
 
 | Field | Description |
 | --- | --- |
 | **Auth token** | Your integration's public token (`token` sent with the checkout request). |
 | **Hash token** | Your integration's signing secret. Used server-side only to sign requests and verify webhooks — never exposed to the browser. |
-| **Base URL** | PayLink host. Defaults to `https://pay.getpayin.com`. |
+| **Base URL** | GetPayIn host. Defaults to `https://pay.getpayin.com`. |
 | **Payment action** | `Capture` (charge immediately) or `Authorize` (hold now, capture later). |
 | **Installments** | `Yes` to offer fixed installments, with the **Number of installments** (2–24). Requires installments enabled on your account. |
 | **Payment type** | `One-off` for a single payment, or `Recurring subscription` to create a mandate. |
@@ -79,8 +79,8 @@ the **PayLink** gateway, and fill in:
    payments go to `{base_url}/api/v2/integration/recurring/init` (which also
    returns a `mandate_id`). The customer is redirected to the returned
    `checkout_url`.
-2. **Payment** — The customer pays on PayLink's hosted checkout.
-3. **Confirmation** — PayLink calls the plugin's webhook. The plugin verifies the
+2. **Payment** — The customer pays on GetPayIn's hosted checkout.
+3. **Confirmation** — GetPayIn calls the plugin's webhook. The plugin verifies the
    body signature (fail-closed) and, on `success=1` with a paid/authorized status,
    marks the order paid via `JPaymentStatus::verified()` + `paid()`.
 
@@ -90,7 +90,7 @@ confirming — no rounding is applied to the stored total.
 
 ## Signing
 
-The plugin uses the same HMAC-SHA256 contract as every other PayLink SDK
+The plugin uses the same HMAC-SHA256 contract as every other GetPayIn SDK
 (`paylink-php`, `paylink-js`, `paylink-python`, `paylink-dotnet`, `paylink-java`)
 and the WooCommerce plugin:
 

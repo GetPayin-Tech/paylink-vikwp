@@ -1,5 +1,5 @@
 <!--
-Thanks for contributing to the PayLink VikWP plugin. Keep the description focused
+Thanks for contributing to the GetPayIn VikWP plugin. Keep the description focused
 on what changes and why. Delete any section that does not apply.
 -->
 
@@ -29,5 +29,5 @@ The plugin must reproduce the server's byte-exact HMAC, so field order matters.
 -->
 
 - [ ] Not applicable — this PR does not touch signed request/webhook fields
-- [ ] `buildSignedFields()` order matches the PayLink v2 `integration/init` endpoint
+- [ ] `buildSignedFields()` order matches the GetPayIn v2 `integration/init` endpoint
 - [ ] `verifyCallbackSignature()` opt-out list is correct and the golden vectors pass

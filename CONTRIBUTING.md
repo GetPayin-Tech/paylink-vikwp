@@ -19,7 +19,7 @@ Run both before opening a PR. The signature check must print
 ## The one thing to get right: signature parity
 
 The gateway's core job is reproducing a byte-exact, order-sensitive HMAC that the
-PayLink server rebuilds independently:
+GetPayIn server rebuilds independently:
 
 ```
 signature = base64( hmac_sha256( implode('', ordered_values), hash_token ) )
@@ -46,7 +46,7 @@ cadence_interval, cadence_count, [total_cycles,] consent_text,
 external_reference, [redirection_url, webhook_url]
 ```
 
-These orders must match the PayLink **v2** endpoints, documented in the
+These orders must match the GetPayIn **v2** endpoints, documented in the
 [integration reference](https://pay.getpayin.com/docs/payment_integration/index.html),
 and mirror the field registry in the official SDKs (e.g.
 `paylink-php`'s `FieldOrders`). `token`, `signature`, `payment_mode`, and
@@ -67,7 +67,7 @@ webhook carrying that field.
 
 `tests/signature-check.php` drives the plugin's **real** `signValues()` and
 `verifyCallbackSignature()` (through reflection, behind lightweight Joomla shims)
-against fixed golden values shared with every other PayLink SDK
+against fixed golden values shared with every other GetPayIn SDK
 (`paylink-php`, `-js`, `-python`, `-dotnet`, `-java`). Adding or reordering a
 signed field without updating a golden case leaves that field's position
 untested. When you touch a signed field, update the vectors in the same change.

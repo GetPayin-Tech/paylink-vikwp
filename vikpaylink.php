@@ -1,9 +1,9 @@
 <?php
 /*
-Plugin Name:  PayLink for VikWP
+Plugin Name:  GetPayIn for VikWP
 Plugin URI:   https://github.com/GetPayin-Tech/paylink-vikwp
-Description:  PayLink / GetPayIn integration to collect payments through the Vik plugins (VikBooking, VikRentCar, VikRentItems, VikAppointments, VikRestaurants).
-Version:      1.1.1
+Description:  GetPayIn integration to collect payments through the Vik plugins (VikBooking, VikRentCar, VikRentItems, VikAppointments, VikRestaurants).
+Version:      1.2.0
 Requires at least: 5.6
 Requires PHP: 7.2
 Author:       GetPayIn
@@ -23,7 +23,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'utils.php';
 
 define('VIKPAYLINK_LANG', basename(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'languages');
 
-define('VIKPAYLINKVERSION', '1.1.1');
+define('VIKPAYLINKVERSION', '1.2.0');
 
 add_action('init', function () {
     JFactory::getLanguage()->load('vikpaylink', VIKPAYLINK_LANG);
@@ -38,7 +38,7 @@ $vikpaylink_components = array('vikrestaurants', 'vikrentitems', 'vikrentcar', '
 
 foreach ($vikpaylink_components as $vikpaylink_component) {
     /**
-     * Pushes the PayLink gateway into the supported payments of the component.
+     * Pushes the GetPayIn gateway into the supported payments of the component.
      *
      * @param   array   $drivers  The current list of supported drivers.
      *
@@ -55,7 +55,7 @@ foreach ($vikpaylink_components as $vikpaylink_component) {
     });
 
     /**
-     * Loads the PayLink payment handler when dispatched by the component.
+     * Loads the GetPayIn payment handler when dispatched by the component.
      *
      * @param   array   &$drivers  A list of payment classnames.
      * @param   string  $payment   The name of the invoked payment.
@@ -74,7 +74,7 @@ foreach ($vikpaylink_components as $vikpaylink_component) {
 }
 
 /**
- * Provides the PayLink logo to VikBooking's order confirmation screen.
+ * Provides the GetPayIn logo to VikBooking's order confirmation screen.
  *
  * @param   array   $logo   An array with the payment name, logo base path and base URI.
  *

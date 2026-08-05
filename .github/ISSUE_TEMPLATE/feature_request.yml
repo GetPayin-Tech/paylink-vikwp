@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        This plugin bridges the Vik plugins to the PayLink payment integration API. Requests that need a new API capability may depend on server-side work first.
+        This plugin bridges the Vik plugins to the GetPayIn payment integration API. Requests that need a new API capability may depend on server-side work first.
   - type: textarea
     id: problem
     attributes:

@@ -14,7 +14,7 @@ defined('ABSPATH') or die('No script kiddies please!');
 JLoader::import('paylink', VIKPAYLINK_DIR);
 
 /**
- * Collects payments in VikRestaurants through the PayLink gateway.
+ * Collects payments in VikRestaurants through the GetPayIn gateway.
  *
  * @since 1.0
  */

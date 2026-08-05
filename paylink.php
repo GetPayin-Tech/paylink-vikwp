@@ -14,17 +14,17 @@ defined('ABSPATH') or die('No script kiddies please!');
 JLoader::import('adapter.payment.payment');
 
 /**
- * PayLink / GetPayIn payment gateway for the Vik plugins.
+ * GetPayIn payment gateway for the Vik plugins.
  *
- * Signs the checkout request with HMAC-SHA256, creates a hosted PayLink checkout via the
+ * Signs the checkout request with HMAC-SHA256, creates a hosted GetPayIn checkout via the
  * v2 integration API, redirects the payer to it, and verifies the signed webhook that
- * confirms the payment. The signing contract matches the PayLink server exactly
- * (the same one used by the official PayLink SDKs and the WooCommerce plugin).
+ * confirms the payment. The signing contract matches the GetPayIn server exactly
+ * (the same one used by the official GetPayIn SDKs and the WooCommerce plugin).
  */
 abstract class AbstractPaylinkPayment extends JPayment
 {
     /**
-     * The default PayLink API base host.
+     * The default GetPayIn API base host.
      *
      * @var string
      */
@@ -75,10 +75,10 @@ abstract class AbstractPaylinkPayment extends JPayment
             'logo' => array(
                 'label' => '',
                 'type'  => 'custom',
-                'html'  => '<img src="' . VIKPAYLINK_URI . 'paylink/paylink-logo.png" alt="PayLink" style="max-width:200px;height:auto;"/>',
+                'html'  => '<img src="' . VIKPAYLINK_URI . 'paylink/paylink-logo.png" alt="GetPayIn" style="max-width:200px;height:auto;"/>',
             ),
             'authtoken' => array(
-                'label' => __('Authentication Token//Copy it from Settings &rarr; Payment Integrations in your PayLink dashboard.', 'vikpaylink'),
+                'label' => __('Authentication Token//Copy it from Settings &rarr; Payment Integrations in your GetPayIn dashboard.', 'vikpaylink'),
                 'type'  => 'text',
             ),
             'hashtoken' => array(
@@ -86,7 +86,7 @@ abstract class AbstractPaylinkPayment extends JPayment
                 'type'  => 'text',
             ),
             'baseurl' => array(
-                'label' => __('API Base URL//Leave as https://pay.getpayin.com unless you were given a dedicated PayLink domain.', 'vikpaylink'),
+                'label' => __('API Base URL//Leave as https://pay.getpayin.com unless you were given a dedicated GetPayIn domain.', 'vikpaylink'),
                 'type'  => 'text',
             ),
             'paymentaction' => array(
@@ -95,7 +95,7 @@ abstract class AbstractPaylinkPayment extends JPayment
                 'options' => array('Capture', 'Authorize'),
             ),
             'installments_enabled' => array(
-                'label' => __('Installments//Offer fixed installments on the PayLink checkout. Requires installments enabled on your account.', 'vikpaylink'),
+                'label' => __('Installments//Offer fixed installments on the GetPayIn checkout. Requires installments enabled on your account.', 'vikpaylink'),
                 'type'  => 'select',
                 'options' => array('No', 'Yes'),
             ),
@@ -129,7 +129,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Creates a PayLink checkout for the current order and sends the payer to it.
+     * Creates a GetPayIn checkout for the current order and sends the payer to it.
      *
      * @return  void
      */
@@ -141,7 +141,7 @@ abstract class AbstractPaylinkPayment extends JPayment
 
         if (!$checkoutUrl) {
             echo '<p class="vikpaylink-error">'
-                . __('We could not start the PayLink checkout. Please try again or contact the store.', 'vikpaylink')
+                . __('We could not start the GetPayIn checkout. Please try again or contact the store.', 'vikpaylink')
                 . '</p>';
 
             return;
@@ -150,14 +150,14 @@ abstract class AbstractPaylinkPayment extends JPayment
         $safeUrl = htmlspecialchars($checkoutUrl, ENT_QUOTES, 'UTF-8');
 
         echo '<div class="vikpaylink-redirect" style="text-align:center;">'
-            . '<p>' . __('Redirecting you to the secure PayLink checkout&hellip;', 'vikpaylink') . '</p>'
+            . '<p>' . __('Redirecting you to the secure GetPayIn checkout&hellip;', 'vikpaylink') . '</p>'
             . '<p><a class="btn btn-primary vikpaylink-paynow" href="' . $safeUrl . '">' . __('Pay Now', 'vikpaylink') . '</a></p>'
             . '<script>window.location.href=' . json_encode($checkoutUrl) . ';</script>'
             . '</div>';
     }
 
     /**
-     * Verifies the signed PayLink webhook and reports the payment status to Vik.
+     * Verifies the signed GetPayIn webhook and reports the payment status to Vik.
      *
      * @param   JPaymentStatus  &$status  The transaction status object.
      *
@@ -168,7 +168,7 @@ abstract class AbstractPaylinkPayment extends JPayment
         $payload = $this->readCallbackPayload();
 
         if (!$payload) {
-            $status->appendLog('PayLink: empty or unreadable webhook payload.');
+            $status->appendLog('GetPayIn: empty or unreadable webhook payload.');
 
             return true;
         }
@@ -176,7 +176,7 @@ abstract class AbstractPaylinkPayment extends JPayment
         $provided = isset($payload['signature']) ? (string) $payload['signature'] : '';
 
         if ($provided === '' || !$this->verifyCallbackSignature($payload, $provided)) {
-            $status->appendLog('PayLink: webhook signature verification failed.');
+            $status->appendLog('GetPayIn: webhook signature verification failed.');
 
             return true;
         }
@@ -193,7 +193,7 @@ abstract class AbstractPaylinkPayment extends JPayment
             $status->paid($this->resolveOrderTotal());
         } else {
             $message = isset($payload['message']) ? (string) $payload['message'] : '';
-            $status->appendLog('PayLink: payment not completed (status: ' . $invoiceStatus . '). ' . $message);
+            $status->appendLog('GetPayIn: payment not completed (status: ' . $invoiceStatus . '). ' . $message);
         }
 
         return true;
@@ -222,7 +222,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Calls the PayLink v2 init endpoint and returns the hosted checkout URL.
+     * Calls the GetPayIn v2 init endpoint and returns the hosted checkout URL.
      *
      * @return  mixed   The checkout URL on success, otherwise false.
      */
@@ -254,7 +254,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Creates a PayLink recurring mandate and returns the hosted setup-charge URL, remembering
+     * Creates a GetPayIn recurring mandate and returns the hosted setup-charge URL, remembering
      * the returned mandate id (`POST /api/v2/integration/recurring/init`).
      *
      * @return  mixed   The checkout URL on success, otherwise false.
@@ -282,7 +282,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Builds the SIGNED init fields in the exact order the PayLink v2 endpoint concatenates
+     * Builds the SIGNED init fields in the exact order the GetPayIn v2 endpoint concatenates
      * them (the FormRequest `rules()` order, mirrored from the official SDKs):
      * first_name, last_name, email, order_title, order_amount, [address, city, country, state,]
      * currency, [redirection_url, webhook_url, order_details]. Optional fields are omitted
@@ -318,7 +318,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Builds the SIGNED recurring fields in the exact order the PayLink recurring endpoint
+     * Builds the SIGNED recurring fields in the exact order the GetPayIn recurring endpoint
      * concatenates them: first_name, last_name, email, order_title, order_amount, currency,
      * cadence_interval, cadence_count, [total_cycles,] consent_text, external_reference,
      * redirection_url, webhook_url. Optional fields are omitted when empty.
@@ -383,7 +383,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Verifies a PayLink callback signature against the ordered subset the server signs:
+     * Verifies a GetPayIn callback signature against the ordered subset the server signs:
      * success, invoice_id, invoice_status, message, plus mandate_id, external_reference,
      * subscription_status when present.
      *
@@ -509,7 +509,7 @@ abstract class AbstractPaylinkPayment extends JPayment
 
     /**
      * Best-effort first/last name for the payer, derived from the order details and falling
-     * back to the email local part or a generic name. PayLink requires both to be non-empty.
+     * back to the email local part or a generic name. GetPayIn requires both to be non-empty.
      *
      * @return  array  A [firstName, lastName] pair.
      */
@@ -580,7 +580,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * Optional free-text order description sent to PayLink, taken from the order info when the
+     * Optional free-text order description sent to GetPayIn, taken from the order info when the
      * component provides one. Empty by default so it is skipped from the signature.
      *
      * @return  string
@@ -603,7 +603,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * The fixed installment count, clamped to the PayLink-supported 2–24 range.
+     * The fixed installment count, clamped to the GetPayIn-supported 2–24 range.
      *
      * @return  int
      */
@@ -671,7 +671,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     /**
      * Persists the mandate id returned by a recurring setup, keyed by the order.
      *
-     * @param   string  $mandateId  The PayLink mandate id.
+     * @param   string  $mandateId  The GetPayIn mandate id.
      *
      * @return  void
      */
@@ -724,7 +724,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
-     * POSTs form-encoded fields to a PayLink endpoint and returns the `data` payload.
+     * POSTs form-encoded fields to a GetPayIn endpoint and returns the `data` payload.
      *
      * @param   string  $url     The endpoint URL.
      * @param   array   $fields  The request fields.

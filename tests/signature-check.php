@@ -1,12 +1,12 @@
 <?php
 /**
- * Offline signature self-check for the PayLink VikWP gateway.
+ * Offline signature self-check for the GetPayIn VikWP gateway.
  *
  * The Joomla/VikWP framework classes only exist inside a live install, so this harness
  * provides the few shims the gateway touches (`JLoader`, `JPayment`), loads the real
  * `paylink.php`, and drives its ACTUAL `signValues()` / `verifyCallbackSignature()` methods
  * through reflection. The expected values are the shared golden vectors used by every other
- * PayLink SDK, so a drift in the signing contract fails this check.
+ * GetPayIn SDK, so a drift in the signing contract fails this check.
  *
  * @package     VikPaylink
  * @subpackage  tests

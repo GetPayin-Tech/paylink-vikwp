@@ -1,18 +1,18 @@
 # VikWP / E4J submission packet
 
-Everything E4J needs to review and list **PayLink for VikWP** as a payment
+Everything E4J needs to review and list **GetPayIn for VikWP** as a payment
 gateway on vikwp.com. This file is for the vendor review only — it is
 export-ignored from the distributed plugin ZIP.
 
 ## What it is
 
 A payment gateway plugin that lets Vik merchants collect payments through
-**PayLink** (getpayin.com). It follows the `JPayment` framework exactly: an
+**GetPayIn** (getpayin.com). It follows the `JPayment` framework exactly: an
 abstract `AbstractPaylinkPayment extends JPayment` with a thin
 `Vik{Component}PaylinkPayment` subclass per app. Payment name: `paylink`.
 
 Card data never touches the merchant server — the payer is redirected to
-PayLink's hosted, PCI-compliant checkout and the order is confirmed from a signed
+GetPayIn's hosted, PCI-compliant checkout and the order is confirmed from a signed
 webhook.
 
 ## Supported Vik apps
@@ -35,14 +35,14 @@ gateway class, registered per app through the framework hooks
 
 - WordPress 5.6+, PHP 7.2+ (cURL, JSON)
 - Any one of the five Vik apps
-- A PayLink account with an integration (auth token + hash token)
+- A GetPayIn account with an integration (auth token + hash token)
 
 ## Security summary
 
 - `hash_token` is a signing secret: server-side only, never sent to the browser,
   never logged. Used only in `hash_hmac`.
 - Request signing and webhook verification use HMAC-SHA256 and are byte-exact with
-  the official PayLink SDKs (verified by `tests/signature-check.php` against shared
+  the official GetPayIn SDKs (verified by `tests/signature-check.php` against shared
   golden vectors — runs in CI on every push).
 - Outbound calls require HTTPS on the integration's registered Origin domain.
 - See `SECURITY.md` for the full policy and private disclosure channel.
@@ -50,9 +50,9 @@ gateway class, registered per app through the framework hooks
 ## How to review / test
 
 1. Install into a WordPress site with any Vik app.
-2. Add the **PayLink** gateway under that app's *Payments* screen; enter test
+2. Add the **GetPayIn** gateway under that app's *Payments* screen; enter test
    integration tokens.
-3. Place an order → redirected to PayLink checkout → pay → webhook flips the order
+3. Place an order → redirected to GetPayIn checkout → pay → webhook flips the order
    to paid.
 4. Static verification without a live site:
    ```bash
