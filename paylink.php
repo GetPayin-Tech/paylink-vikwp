@@ -73,7 +73,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     {
         return array(
             'logo' => array(
-                'label' => __('', 'vikpaylink'),
+                'label' => '',
                 'type'  => 'custom',
                 'html'  => '<img src="' . VIKPAYLINK_URI . 'paylink/paylink-logo.png" alt="PayLink" style="max-width:200px;height:auto;"/>',
             ),

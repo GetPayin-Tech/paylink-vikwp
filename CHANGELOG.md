@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1]
+
+### Added
+
+- `languages/vikpaylink.pot` translation template and completed plugin headers (`Plugin URI`, `Requires at least`, `Requires PHP`, `Update URI`) for marketplace/distribution readiness.
+
+### Fixed
+
+- The logo admin label passed an empty string through `__()`, which gettext reserves for the catalog header; it is now a plain empty string.
+
 ## [1.1.0]
 
 ### Added
