@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest an improvement or new capability for the plugin
+labels: ['enhancement']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This plugin bridges the Vik plugins to the PayLink payment integration API. Requests that need a new API capability may depend on server-side work first.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that the plugin does not support today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: The behavior or setting you would like. Note which Vik plugin(s) it applies to.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds you are using now, or other approaches you weighed.
+    validations:
+      required: false
