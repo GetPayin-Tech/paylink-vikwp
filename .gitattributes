@@ -1,0 +1,9 @@
+# Keep development-only files out of the distributed plugin ZIP (git archive).
+/.github        export-ignore
+/.gitattributes export-ignore
+/.gitignore     export-ignore
+/tests          export-ignore
+/CHANGELOG.md   export-ignore
+
+# Normalise line endings for PHP so the plugin is byte-identical on every platform.
+*.php text eol=lf
