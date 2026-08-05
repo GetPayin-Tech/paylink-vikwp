@@ -4,6 +4,22 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0]
+
+### Added
+
+- **Installments** — offer fixed 2–24 installments on the hosted checkout (sent unsigned, alongside `payment_mode`).
+- **Recurring subscriptions** — a new `Recurring subscription` payment type creates a mandate via `/api/v2/integration/recurring/init` (cadence interval/count, optional total cycles, consent text) and confirms the setup charge; the returned `mandate_id` is captured from the webhook.
+- **Billing address + order details** — `address`, `city`, `country`, `state`, and `order_details` are now forwarded (in the correct signed position, skipped when empty) to prefill the checkout.
+
+### Changed
+
+- Signed request builder now mirrors the full server field order shared with the official PayLink SDKs; new golden vectors and builder-order assertions cover it.
+
+### Removed
+
+- The no-op **Test mode** field. Test vs live is determined by which tokens you enter, so the toggle did nothing.
+
 ## [1.0.0]
 
 First public release of the PayLink payment gateway for the VikWP (E4J) plugins.

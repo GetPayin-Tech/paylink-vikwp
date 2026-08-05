@@ -30,18 +30,28 @@ There are two signatures, signed by opposite rules.
 ### Requests sign by opt-in
 
 `buildSignedFields()` in `paylink.php` lists exactly the fields that are signed,
-**in order**:
+**in order**, skipping any that are empty:
+
+```
+first_name, last_name, email, order_title, order_amount,
+[address, city, country, state,] currency,
+[redirection_url, webhook_url, order_details]
+```
+
+`buildRecurringFields()` does the same for `/recurring/init`:
 
 ```
 first_name, last_name, email, order_title, order_amount, currency,
-redirection_url, webhook_url
+cadence_interval, cadence_count, [total_cycles,] consent_text,
+external_reference, [redirection_url, webhook_url]
 ```
 
-This order must match the PayLink **v2** `integration/init` endpoint, documented
-in the [integration reference](https://pay.getpayin.com/docs/payment_integration/index.html).
-`token`, `signature`, and `payment_mode` are sent but **not** signed. Nothing in
-PHP checks the order for you — a wrong order compiles and lints cleanly but is
-rejected by the server.
+These orders must match the PayLink **v2** endpoints, documented in the
+[integration reference](https://pay.getpayin.com/docs/payment_integration/index.html),
+and mirror the field registry in the official SDKs (e.g.
+`paylink-php`'s `FieldOrders`). `token`, `signature`, `payment_mode`, and
+`installments*` are sent but **not** signed. Nothing in PHP checks the order for
+you — a wrong order compiles and lints cleanly but is rejected by the server.
 
 ### Webhooks verify by opt-out
 

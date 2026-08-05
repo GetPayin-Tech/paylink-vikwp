@@ -186,6 +186,91 @@ $assert(
     $verify->invoke($gateway, $subPayload, $subGolden) === true
 );
 
+$initFull = $signValues->invoke($gateway, array('John', 'Doe', 'john@example.com', 'Gold Plan', '250', '1 Main St', 'Cairo', 'EG', 'C', 'USD', 'https://shop.example.com/return', 'https://shop.example.com/webhook', 'note'));
+$assert(
+    'init full (billing + order_details) signature',
+    $initFull === 'HpF+SI9LirGLrMLvVeFVbgxg4P+reftqQoBd3PEGc9M=',
+    'got=' . $initFull
+);
+
+$recurringFull = $signValues->invoke($gateway, array('Sam', 'Doe', 'sam@example.com', 'Gold', '250', 'USD', 'month', '1', '12', '2027-01-01', 'I authorise monthly charges.', 'sub_1', 'https://shop.example.com/r', 'https://shop.example.com/w'));
+$assert(
+    'recurring full signature',
+    $recurringFull === 'WhKcyD4mgwk+/3N3vpKLrPuADXt0tduRxYpZ7oeucOM=',
+    'got=' . $recurringFull
+);
+
+$recurringMinimal = $signValues->invoke($gateway, array('Sam', 'Doe', 'sam@example.com', 'Gold', '250', 'USD', 'month', '1', 'I authorise monthly charges.'));
+$assert(
+    'recurring minimal signature',
+    $recurringMinimal === '+iqRMH/msH9xOx7JrzuRVn3VBzhfNQNaG72hbtzCl+c=',
+    'got=' . $recurringMinimal
+);
+
+$buildSigned = $reflection->getMethod('buildSignedFields');
+$buildSigned->setAccessible(true);
+
+$buildRecurring = $reflection->getMethod('buildRecurringFields');
+$buildRecurring->setAccessible(true);
+
+/**
+ * Builds a gateway seeded with the given order info and admin params.
+ *
+ * @param   array  $order   The order info.
+ * @param   array  $params  The admin params.
+ *
+ * @return  TestPaylinkPayment
+ */
+$makeGateway = function (array $order, array $params) use ($hashToken) {
+    $params['hashtoken'] = $hashToken;
+
+    return new TestPaylinkPayment('vikbooking', $order, $params);
+};
+
+$fullOrder = array(
+    'details'              => array('first_name' => 'John Doe', 'address' => '1 Main St', 'city' => 'Cairo', 'country' => 'EG', 'state' => 'C'),
+    'custmail'             => 'john@example.com',
+    'transaction_name'     => 'Gold Plan',
+    'total_to_pay'         => 250,
+    'transaction_currency' => 'USD',
+    'return_url'           => 'https://shop.example.com/return',
+    'notify_url'           => 'https://shop.example.com/webhook',
+    'order_details'        => 'note',
+);
+$fullKeys = array_keys($buildSigned->invoke($makeGateway($fullOrder, array())));
+$assert(
+    'buildSignedFields full order matches server field order',
+    $fullKeys === array('first_name', 'last_name', 'email', 'order_title', 'order_amount', 'address', 'city', 'country', 'state', 'currency', 'redirection_url', 'webhook_url', 'order_details'),
+    'got=' . implode(',', $fullKeys)
+);
+
+$minimalOrder = array(
+    'custmail'             => 'jane@example.com',
+    'transaction_name'     => 'Basic',
+    'total_to_pay'         => 100,
+    'transaction_currency' => 'EGP',
+);
+$minimalKeys = array_keys($buildSigned->invoke($makeGateway($minimalOrder, array())));
+$assert(
+    'buildSignedFields skips empty optionals',
+    $minimalKeys === array('first_name', 'last_name', 'email', 'order_title', 'order_amount', 'currency'),
+    'got=' . implode(',', $minimalKeys)
+);
+
+$recurringParams = array(
+    'paymenttype'      => 'Recurring subscription',
+    'cadence_interval' => 'month',
+    'cadence_count'    => '1',
+    'total_cycles'     => '12',
+    'consent_text'     => 'I authorise monthly charges.',
+);
+$recurringKeys = array_keys($buildRecurring->invoke($makeGateway($fullOrder, $recurringParams)));
+$assert(
+    'buildRecurringFields matches server field order',
+    $recurringKeys === array('first_name', 'last_name', 'email', 'order_title', 'order_amount', 'currency', 'cadence_interval', 'cadence_count', 'total_cycles', 'consent_text', 'external_reference', 'redirection_url', 'webhook_url'),
+    'got=' . implode(',', $recurringKeys)
+);
+
 echo "\n";
 
 if ($failures === 0) {

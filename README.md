@@ -24,9 +24,11 @@ Works with all five Vik plugins:
 
 - Hosted checkout redirect (`beginTransaction` → PayLink) with idempotent invoice creation
 - Capture now, or **authorize** and capture later from the dashboard
+- Fixed **installments** (2–24) on the hosted checkout
+- **Recurring subscriptions** — creates a mandate and charges the order total every cycle
+- **Billing address** and order details forwarded to prefill the checkout
 - Signed **webhook** verification, fail-closed (`hash_equals`)
 - Per-request **return & webhook URLs** — no dashboard round-trip
-- **Test mode** toggle for sandbox tokens
 - One shared gateway class across every Vik component
 
 > **Card data never reaches your server.** Payment is completed on PayLink's
@@ -60,17 +62,23 @@ the **PayLink** gateway, and fill in:
 | **Hash token** | Your integration's signing secret. Used server-side only to sign requests and verify webhooks — never exposed to the browser. |
 | **Base URL** | PayLink host. Defaults to `https://pay.getpayin.com`. |
 | **Payment action** | `Capture` (charge immediately) or `Authorize` (hold now, capture later). |
-| **Test mode** | Use `Yes` while integrating with sandbox tokens. |
+| **Installments** | `Yes` to offer fixed installments, with the **Number of installments** (2–24). Requires installments enabled on your account. |
+| **Payment type** | `One-off` for a single payment, or `Recurring subscription` to create a mandate. |
+| **Recurring interval / count / total cycles / consent text** | For recurring: the billing period (`month`/`week`/`day`/`year`), how many intervals between charges, an optional cap on the number of charges, and the consent statement shown to the payer. |
 
-> Your integration's registered **Origin** domain must match this site's domain,
-> and the return/webhook URLs must be **HTTPS**.
+> Whether you use **test** or **live** credentials is decided by which tokens you
+> enter above — there is no separate test switch. Your integration's registered
+> **Origin** domain must match this site's domain, and the return/webhook URLs
+> must be **HTTPS**.
 
 ## How it works
 
 1. **Checkout** — When the customer confirms an order, `beginTransaction()` builds
-   a signed **v2** init request and POSTs it to `{base_url}/api/v2/integration/init`
-   with an `Idempotency-Key` derived from the order. The customer is redirected to
-   the returned `checkout_url`.
+   a signed **v2** request and POSTs it with an `Idempotency-Key` derived from the
+   order. One-off payments go to `{base_url}/api/v2/integration/init`; recurring
+   payments go to `{base_url}/api/v2/integration/recurring/init` (which also
+   returns a `mandate_id`). The customer is redirected to the returned
+   `checkout_url`.
 2. **Payment** — The customer pays on PayLink's hosted checkout.
 3. **Confirmation** — PayLink calls the plugin's webhook. The plugin verifies the
    body signature (fail-closed) and, on `success=1` with a paid/authorized status,
@@ -91,7 +99,12 @@ signature = base64( hmac_sha256( implode('', ordered_values), hash_token ) )
 ```
 
 - **Request (v2 init)** signs, in order: `first_name, last_name, email,
-  order_title, order_amount, currency, redirection_url, webhook_url`.
+  order_title, order_amount, [address, city, country, state,] currency,
+  [redirection_url, webhook_url, order_details]`. Optional fields are skipped when
+  empty; `payment_mode` and `installments*` are sent but **not** signed.
+- **Recurring init** signs, in order: `first_name, last_name, email, order_title,
+  order_amount, currency, cadence_interval, cadence_count, [total_cycles,]
+  consent_text, external_reference, [redirection_url, webhook_url]`.
 - **Webhook** verifies, in order: `success, invoice_id, invoice_status, message`
   (plus `mandate_id, external_reference, subscription_status` when present).
 

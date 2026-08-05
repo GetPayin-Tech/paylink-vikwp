@@ -94,10 +94,36 @@ abstract class AbstractPaylinkPayment extends JPayment
                 'type'  => 'select',
                 'options' => array('Capture', 'Authorize'),
             ),
-            'testmode' => array(
-                'label' => __('Test Mode//Enable while you are using PayLink test credentials in the fields above.', 'vikpaylink'),
+            'installments_enabled' => array(
+                'label' => __('Installments//Offer fixed installments on the PayLink checkout. Requires installments enabled on your account.', 'vikpaylink'),
                 'type'  => 'select',
-                'options' => array('Yes', 'No'),
+                'options' => array('No', 'Yes'),
+            ),
+            'installments' => array(
+                'label' => __('Number of Installments//Between 2 and 24. Used only when installments are enabled above.', 'vikpaylink'),
+                'type'  => 'text',
+            ),
+            'paymenttype' => array(
+                'label' => __('Payment Type//One-off takes a single payment. Recurring creates a subscription mandate and charges the order total every cycle.', 'vikpaylink'),
+                'type'  => 'select',
+                'options' => array('One-off', 'Recurring subscription'),
+            ),
+            'cadence_interval' => array(
+                'label' => __('Recurring Interval//The billing period for recurring payments.', 'vikpaylink'),
+                'type'  => 'select',
+                'options' => array('month', 'week', 'day', 'year'),
+            ),
+            'cadence_count' => array(
+                'label' => __('Recurring Interval Count//How many intervals between charges. 1 with a monthly interval means once a month.', 'vikpaylink'),
+                'type'  => 'text',
+            ),
+            'total_cycles' => array(
+                'label' => __('Total Cycles//Optional. Stop after this many charges. Leave empty for an open-ended subscription.', 'vikpaylink'),
+                'type'  => 'text',
+            ),
+            'consent_text' => array(
+                'label' => __('Consent Text//Shown to the payer when they authorise recurring charges. Required for recurring payments.', 'vikpaylink'),
+                'type'  => 'textarea',
             ),
         );
     }
@@ -111,7 +137,7 @@ abstract class AbstractPaylinkPayment extends JPayment
     {
         $this->rememberOrderTotal();
 
-        $checkoutUrl = $this->createCheckoutUrl();
+        $checkoutUrl = $this->isRecurring() ? $this->createRecurringUrl() : $this->createCheckoutUrl();
 
         if (!$checkoutUrl) {
             echo '<p class="vikpaylink-error">'
@@ -153,6 +179,10 @@ abstract class AbstractPaylinkPayment extends JPayment
             $status->appendLog('PayLink: webhook signature verification failed.');
 
             return true;
+        }
+
+        if (!empty($payload['mandate_id'])) {
+            $this->rememberMandateId((string) $payload['mandate_id']);
         }
 
         $invoiceStatus = strtoupper((string) (isset($payload['invoice_status']) ? $payload['invoice_status'] : ''));
@@ -209,6 +239,11 @@ abstract class AbstractPaylinkPayment extends JPayment
             $body['payment_mode'] = 'authorize';
         }
 
+        if ($this->getParam('installments_enabled') === 'Yes') {
+            $body['installments_enabled'] = '1';
+            $body['installments'] = (string) $this->installmentCount();
+        }
+
         $response = $this->httpPost($this->apiBaseUrl() . '/api/v2/integration/init', $body);
 
         if (!is_array($response) || empty($response['checkout_url'])) {
@@ -219,27 +254,118 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
+     * Creates a PayLink recurring mandate and returns the hosted setup-charge URL, remembering
+     * the returned mandate id (`POST /api/v2/integration/recurring/init`).
+     *
+     * @return  mixed   The checkout URL on success, otherwise false.
+     */
+    protected function createRecurringUrl()
+    {
+        $signed = $this->buildRecurringFields();
+        $signature = $this->signValues(array_values($signed));
+
+        $body = $signed;
+        $body['token'] = (string) $this->getParam('authtoken');
+        $body['signature'] = $signature;
+
+        $response = $this->httpPost($this->apiBaseUrl() . '/api/v2/integration/recurring/init', $body);
+
+        if (!is_array($response) || empty($response['checkout_url'])) {
+            return false;
+        }
+
+        if (!empty($response['mandate_id'])) {
+            $this->rememberMandateId((string) $response['mandate_id']);
+        }
+
+        return (string) $response['checkout_url'];
+    }
+
+    /**
      * Builds the SIGNED init fields in the exact order the PayLink v2 endpoint concatenates
-     * them: first_name, last_name, email, order_title, order_amount, currency,
-     * redirection_url, webhook_url. Optional billing address fields and order_details are
-     * omitted here.
+     * them (the FormRequest `rules()` order, mirrored from the official SDKs):
+     * first_name, last_name, email, order_title, order_amount, [address, city, country, state,]
+     * currency, [redirection_url, webhook_url, order_details]. Optional fields are omitted
+     * entirely when empty, exactly as the server skips absent values.
      *
      * @return  array   The ordered field map.
      */
     protected function buildSignedFields()
     {
         list($firstName, $lastName) = $this->resolveCustomerName();
+        $billing = $this->resolveBilling();
 
-        return array(
-            'first_name'      => $firstName,
-            'last_name'       => $lastName,
-            'email'           => (string) $this->get('custmail', ''),
-            'order_title'     => (string) $this->get('transaction_name', 'Order ' . $this->get('sid', '')),
-            'order_amount'    => $this->formatAmount($this->resolveOrderTotal()),
-            'currency'        => (string) $this->get('transaction_currency', 'EUR'),
-            'redirection_url' => (string) $this->get('return_url', ''),
-            'webhook_url'     => (string) $this->get('notify_url', ''),
+        $fields = array(
+            'first_name'   => $firstName,
+            'last_name'    => $lastName,
+            'email'        => (string) $this->get('custmail', ''),
+            'order_title'  => (string) $this->get('transaction_name', 'Order ' . $this->get('sid', '')),
+            'order_amount' => $this->formatAmount($this->resolveOrderTotal()),
         );
+
+        $this->appendIfFilled($fields, 'address', $billing['address']);
+        $this->appendIfFilled($fields, 'city', $billing['city']);
+        $this->appendIfFilled($fields, 'country', $billing['country']);
+        $this->appendIfFilled($fields, 'state', $billing['state']);
+
+        $fields['currency'] = (string) $this->get('transaction_currency', 'EUR');
+
+        $this->appendIfFilled($fields, 'redirection_url', (string) $this->get('return_url', ''));
+        $this->appendIfFilled($fields, 'webhook_url', (string) $this->get('notify_url', ''));
+        $this->appendIfFilled($fields, 'order_details', $this->resolveOrderDetails());
+
+        return $fields;
+    }
+
+    /**
+     * Builds the SIGNED recurring fields in the exact order the PayLink recurring endpoint
+     * concatenates them: first_name, last_name, email, order_title, order_amount, currency,
+     * cadence_interval, cadence_count, [total_cycles,] consent_text, external_reference,
+     * redirection_url, webhook_url. Optional fields are omitted when empty.
+     *
+     * @return  array   The ordered field map.
+     */
+    protected function buildRecurringFields()
+    {
+        list($firstName, $lastName) = $this->resolveCustomerName();
+
+        $fields = array(
+            'first_name'       => $firstName,
+            'last_name'        => $lastName,
+            'email'            => (string) $this->get('custmail', ''),
+            'order_title'      => (string) $this->get('transaction_name', 'Order ' . $this->get('sid', '')),
+            'order_amount'     => $this->formatAmount($this->resolveOrderTotal()),
+            'currency'         => (string) $this->get('transaction_currency', 'EUR'),
+            'cadence_interval' => $this->cadenceInterval(),
+            'cadence_count'    => (string) $this->cadenceCount(),
+        );
+
+        $this->appendIfFilled($fields, 'total_cycles', $this->totalCycles());
+
+        $fields['consent_text'] = $this->consentText();
+        $fields['external_reference'] = $this->externalReference();
+
+        $this->appendIfFilled($fields, 'redirection_url', (string) $this->get('return_url', ''));
+        $this->appendIfFilled($fields, 'webhook_url', (string) $this->get('notify_url', ''));
+
+        return $fields;
+    }
+
+    /**
+     * Appends a key to the ordered field map only when the value is non-empty, preserving the
+     * server's skip-absent-optional signing semantics.
+     *
+     * @param   array   &$fields  The field map being built.
+     * @param   string  $key      The wire key.
+     * @param   string  $value    The candidate value.
+     *
+     * @return  void
+     */
+    protected function appendIfFilled(array &$fields, $key, $value)
+    {
+        if ((string) $value !== '') {
+            $fields[$key] = (string) $value;
+        }
     }
 
     /**
@@ -413,6 +539,147 @@ abstract class AbstractPaylinkPayment extends JPayment
         $last  = count($parts) > 1 ? implode(' ', array_slice($parts, 1)) : 'Customer';
 
         return array($first, $last);
+    }
+
+    /**
+     * Best-effort billing address for the payer, gathered from the common Vik order-detail
+     * keys. Every value is optional; empty ones are skipped from the signed request.
+     *
+     * @return  array  A map with address, city, country and state keys.
+     */
+    protected function resolveBilling()
+    {
+        $details = $this->get('details', array());
+        $details = is_array($details) ? $details : array();
+
+        return array(
+            'address' => $this->firstDetail($details, array('address', 'custaddress', 'billing_address', 'field_address', 'street')),
+            'city'    => $this->firstDetail($details, array('city', 'custcity', 'billing_city', 'field_city')),
+            'country' => $this->firstDetail($details, array('country', 'custcountry', 'country_code', 'billing_country', 'field_country')),
+            'state'   => $this->firstDetail($details, array('state', 'custstate', 'province', 'region', 'billing_state', 'field_state')),
+        );
+    }
+
+    /**
+     * Returns the first non-empty value among the given detail keys.
+     *
+     * @param   array  $details  The order-detail map.
+     * @param   array  $keys     The candidate keys, in priority order.
+     *
+     * @return  string
+     */
+    protected function firstDetail(array $details, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (!empty($details[$key])) {
+                return (string) $details[$key];
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * Optional free-text order description sent to PayLink, taken from the order info when the
+     * component provides one. Empty by default so it is skipped from the signature.
+     *
+     * @return  string
+     */
+    protected function resolveOrderDetails()
+    {
+        $details = $this->get('order_details', $this->get('description', ''));
+
+        return is_string($details) ? trim($details) : '';
+    }
+
+    /**
+     * Whether this gateway is configured to create a recurring subscription mandate.
+     *
+     * @return  bool
+     */
+    protected function isRecurring()
+    {
+        return $this->getParam('paymenttype') === 'Recurring subscription';
+    }
+
+    /**
+     * The fixed installment count, clamped to the PayLink-supported 2–24 range.
+     *
+     * @return  int
+     */
+    protected function installmentCount()
+    {
+        return max(2, min(24, (int) $this->getParam('installments')));
+    }
+
+    /**
+     * The recurring billing interval, defaulting to monthly.
+     *
+     * @return  string
+     */
+    protected function cadenceInterval()
+    {
+        $interval = (string) $this->getParam('cadence_interval');
+
+        return in_array($interval, array('day', 'week', 'month', 'year'), true) ? $interval : 'month';
+    }
+
+    /**
+     * The number of intervals between recurring charges, at least 1.
+     *
+     * @return  int
+     */
+    protected function cadenceCount()
+    {
+        return max(1, (int) $this->getParam('cadence_count'));
+    }
+
+    /**
+     * The optional cap on the number of recurring charges. Empty means open-ended.
+     *
+     * @return  string
+     */
+    protected function totalCycles()
+    {
+        $cycles = (int) $this->getParam('total_cycles');
+
+        return $cycles > 0 ? (string) $cycles : '';
+    }
+
+    /**
+     * The consent statement shown when authorising recurring charges, with a sensible default.
+     *
+     * @return  string
+     */
+    protected function consentText()
+    {
+        $consent = trim((string) $this->getParam('consent_text'));
+
+        return $consent !== '' ? $consent : __('I authorise recurring charges for this subscription.', 'vikpaylink');
+    }
+
+    /**
+     * A stable per-order reference so recurring webhooks can be correlated back to the order.
+     *
+     * @return  string
+     */
+    protected function externalReference()
+    {
+        return 'vik_' . $this->get('sid', '0') . '_' . $this->get('oid', '0');
+    }
+
+    /**
+     * Persists the mandate id returned by a recurring setup, keyed by the order.
+     *
+     * @param   string  $mandateId  The PayLink mandate id.
+     *
+     * @return  void
+     */
+    protected function rememberMandateId($mandateId)
+    {
+        if (function_exists('set_transient')) {
+            set_transient('vikpaylink_mandate_' . $this->externalReference(), $mandateId, 60 * MINUTE_IN_SECONDS);
+        }
     }
 
     /**
