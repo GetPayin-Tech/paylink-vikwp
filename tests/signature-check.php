@@ -271,6 +271,22 @@ $assert(
     'got=' . implode(',', $recurringKeys)
 );
 
+$apiBaseUrl = $reflection->getMethod('apiBaseUrl');
+$apiBaseUrl->setAccessible(true);
+
+$assert(
+    'apiBaseUrl adds https:// when the scheme is missing',
+    $apiBaseUrl->invoke($makeGateway(array(), array('baseurl' => 'pay.getpayin.com'))) === 'https://pay.getpayin.com'
+);
+$assert(
+    'apiBaseUrl defaults to https://pay.getpayin.com when empty',
+    $apiBaseUrl->invoke($makeGateway(array(), array('baseurl' => ''))) === 'https://pay.getpayin.com'
+);
+$assert(
+    'apiBaseUrl preserves an explicit scheme and trims the trailing slash',
+    $apiBaseUrl->invoke($makeGateway(array(), array('baseurl' => 'https://custom.example.com/'))) === 'https://custom.example.com'
+);
+
 echo "\n";
 
 if ($failures === 0) {

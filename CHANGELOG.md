@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1]
+
+### Fixed
+
+- **API Base URL without a scheme** (e.g. `pay.getpayin.com`) no longer breaks checkout. cURL defaulted to `http://`, the server redirected to `https://`, and the un-followed redirect surfaced as "We could not start the GetPayIn checkout." The base URL now gets `https://` prepended when the scheme is missing.
+
+### Added
+
+- Diagnostic logging on checkout/webhook HTTP failures (cURL error, HTTP status + response body, or a missing `checkout_url`) via `error_log`, so failures are debuggable. The hash token and request body are never logged.
+- The init/recurring response now also accepts a `url` key as an alias for `checkout_url`.
+
 ## [1.2.0]
 
 ### Changed

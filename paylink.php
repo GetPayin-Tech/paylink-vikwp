@@ -245,12 +245,9 @@ abstract class AbstractPaylinkPayment extends JPayment
         }
 
         $response = $this->httpPost($this->apiBaseUrl() . '/api/v2/integration/init', $body);
+        $checkoutUrl = $this->checkoutUrlFrom($response);
 
-        if (!is_array($response) || empty($response['checkout_url'])) {
-            return false;
-        }
-
-        return (string) $response['checkout_url'];
+        return $checkoutUrl !== '' ? $checkoutUrl : false;
     }
 
     /**
@@ -269,16 +266,17 @@ abstract class AbstractPaylinkPayment extends JPayment
         $body['signature'] = $signature;
 
         $response = $this->httpPost($this->apiBaseUrl() . '/api/v2/integration/recurring/init', $body);
+        $checkoutUrl = $this->checkoutUrlFrom($response);
 
-        if (!is_array($response) || empty($response['checkout_url'])) {
+        if ($checkoutUrl === '') {
             return false;
         }
 
-        if (!empty($response['mandate_id'])) {
+        if (is_array($response) && !empty($response['mandate_id'])) {
             $this->rememberMandateId((string) $response['mandate_id']);
         }
 
-        return (string) $response['checkout_url'];
+        return $checkoutUrl;
     }
 
     /**
@@ -465,6 +463,10 @@ abstract class AbstractPaylinkPayment extends JPayment
 
         if ($url === '') {
             $url = self::DEFAULT_BASE_URL;
+        }
+
+        if (!preg_match('#^https?://#i', $url)) {
+            $url = 'https://' . $url;
         }
 
         return rtrim($url, '/');
@@ -749,18 +751,67 @@ abstract class AbstractPaylinkPayment extends JPayment
 
         $raw = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
         curl_close($ch);
 
-        if ($raw === false || $code < 200 || $code >= 300) {
+        if ($raw === false) {
+            $this->logError('request to ' . $url . ' failed: ' . $error);
+
+            return false;
+        }
+
+        if ($code < 200 || $code >= 300) {
+            $this->logError('HTTP ' . $code . ' from ' . $url . ': ' . substr((string) $raw, 0, 1000));
+
             return false;
         }
 
         $decoded = json_decode($raw, true);
 
         if (!is_array($decoded)) {
+            $this->logError('non-JSON response from ' . $url . ': ' . substr((string) $raw, 0, 500));
+
             return false;
         }
 
         return isset($decoded['data']) && is_array($decoded['data']) ? $decoded['data'] : $decoded;
+    }
+
+    /**
+     * Reads the hosted checkout URL from an init/recurring response, accepting both the
+     * `checkout_url` and `url` keys, and logs the payload when neither is present.
+     *
+     * @param   mixed  $response  The decoded response payload.
+     *
+     * @return  string  The checkout URL, or an empty string when absent.
+     */
+    protected function checkoutUrlFrom($response)
+    {
+        if (!is_array($response)) {
+            return '';
+        }
+
+        $url = !empty($response['checkout_url'])
+            ? $response['checkout_url']
+            : (!empty($response['url']) ? $response['url'] : '');
+
+        if ($url === '') {
+            $this->logError('no checkout_url in response: ' . substr((string) json_encode($response), 0, 500));
+        }
+
+        return (string) $url;
+    }
+
+    /**
+     * Writes a diagnostic line to the PHP error log. It never includes the hash token or the
+     * request body, so the signing secret cannot leak into logs.
+     *
+     * @param   string  $message  The message to record.
+     *
+     * @return  void
+     */
+    protected function logError($message)
+    {
+        error_log('GetPayIn VikWP: ' . $message);
     }
 }
