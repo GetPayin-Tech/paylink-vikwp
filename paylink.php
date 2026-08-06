@@ -94,6 +94,11 @@ abstract class AbstractPaylinkPayment extends JPayment
                 'type'  => 'select',
                 'options' => array('Capture', 'Authorize'),
             ),
+            'iframe_enabled' => array(
+                'label' => __('Embedded Checkout//Show the GetPayIn checkout embedded in your site (iframe) instead of redirecting to it. Your integration Origin must exactly match this site\'s URL. One-off payments only — recurring subscriptions always redirect.', 'vikpaylink'),
+                'type'  => 'select',
+                'options' => array('No', 'Yes'),
+            ),
             'installments_enabled' => array(
                 'label' => __('Installments//Offer fixed installments on the GetPayIn checkout. Requires installments enabled on your account.', 'vikpaylink'),
                 'type'  => 'select',
@@ -147,6 +152,23 @@ abstract class AbstractPaylinkPayment extends JPayment
             return;
         }
 
+        if ($this->iframeEnabled()) {
+            $this->renderIframe($checkoutUrl);
+        } else {
+            $this->renderRedirect($checkoutUrl);
+        }
+    }
+
+    /**
+     * Renders the full-page redirect to the hosted GetPayIn checkout, with a "Pay Now"
+     * link as the no-JavaScript fallback.
+     *
+     * @param   string  $checkoutUrl  The hosted checkout URL.
+     *
+     * @return  void
+     */
+    protected function renderRedirect($checkoutUrl)
+    {
         $safeUrl = htmlspecialchars($checkoutUrl, ENT_QUOTES, 'UTF-8');
 
         echo '<div class="vikpaylink-redirect" style="text-align:center;">'
@@ -154,6 +176,52 @@ abstract class AbstractPaylinkPayment extends JPayment
             . '<p><a class="btn btn-primary vikpaylink-paynow" href="' . $safeUrl . '">' . __('Pay Now', 'vikpaylink') . '</a></p>'
             . '<script>window.location.href=' . json_encode($checkoutUrl) . ';</script>'
             . '</div>';
+    }
+
+    /**
+     * Embeds the hosted GetPayIn checkout in an iframe and listens for the signed
+     * `paylink_payment` postMessage the checkout sends on completion, then moves the top
+     * window to the shop's return (success) or error (failure) URL. The listener accepts
+     * messages only from the configured GetPayIn origin, so a foreign frame cannot spoof
+     * an outcome. A plain link is shown for browsers that block third-party frames.
+     *
+     * @param   string  $checkoutUrl  The hosted checkout URL (already carries `iframe=1`).
+     *
+     * @return  void
+     */
+    protected function renderIframe($checkoutUrl)
+    {
+        $safeUrl = htmlspecialchars($checkoutUrl, ENT_QUOTES, 'UTF-8');
+
+        $returnUrl = (string) $this->get('return_url', '');
+        $errorUrl  = (string) $this->get('error_url', '');
+
+        if ($errorUrl === '') {
+            $errorUrl = $returnUrl;
+        }
+
+        echo '<div class="vikpaylink-iframe-wrap" style="width:100%;">'
+            . '<iframe class="vikpaylink-iframe" src="' . $safeUrl . '" '
+            . 'style="width:100%;min-height:640px;height:82vh;border:0;" '
+            . 'allow="payment *" allowpaymentrequest="true"></iframe>'
+            . '<p class="vikpaylink-iframe-fallback" style="text-align:center;">'
+            . '<a class="btn btn-primary vikpaylink-paynow" href="' . $safeUrl . '" target="_top">'
+            . __('Trouble viewing the checkout? Open it in this window', 'vikpaylink') . '</a></p>'
+            . '</div>';
+
+        echo '<script>(function(){'
+            . 'var expected=' . json_encode($this->checkoutOrigin()) . ';'
+            . 'var ret=' . json_encode($returnUrl) . ';'
+            . 'var err=' . json_encode($errorUrl) . ';'
+            . 'window.addEventListener("message",function(e){'
+            . 'if(expected&&e.origin!==expected){return;}'
+            . 'var d=e.data;'
+            . 'if(!d||typeof d!=="object"||d.type!=="paylink_payment"){return;}'
+            . 'var url=d.success?ret:err;'
+            . 'try{if(url){window.top.location.href=url;}else{window.top.location.reload();}}'
+            . 'catch(ex){if(url){window.location.href=url;}else{window.location.reload();}}'
+            . '});'
+            . '}());</script>';
     }
 
     /**
@@ -242,6 +310,10 @@ abstract class AbstractPaylinkPayment extends JPayment
         if ($this->getParam('installments_enabled') === 'Yes') {
             $body['installments_enabled'] = '1';
             $body['installments'] = (string) $this->installmentCount();
+        }
+
+        if ($this->iframeEnabled()) {
+            $body['iframe'] = '1';
         }
 
         $response = $this->httpPost($this->apiBaseUrl() . '/api/v2/integration/init', $body);
@@ -473,6 +545,30 @@ abstract class AbstractPaylinkPayment extends JPayment
     }
 
     /**
+     * The scheme://host[:port] origin of the GetPayIn checkout, used to authenticate the
+     * `postMessage` sent by the embedded checkout. Returns an empty string when the base
+     * URL cannot be parsed, in which case the listener skips the origin check.
+     *
+     * @return  string
+     */
+    protected function checkoutOrigin()
+    {
+        $parts = parse_url($this->apiBaseUrl());
+
+        if (empty($parts['scheme']) || empty($parts['host'])) {
+            return '';
+        }
+
+        $origin = $parts['scheme'] . '://' . $parts['host'];
+
+        if (!empty($parts['port'])) {
+            $origin .= ':' . $parts['port'];
+        }
+
+        return $origin;
+    }
+
+    /**
      * Formats a monetary amount to a fixed 2-decimal wire form.
      *
      * @param   mixed  $amount  The amount.
@@ -602,6 +698,18 @@ abstract class AbstractPaylinkPayment extends JPayment
     protected function isRecurring()
     {
         return $this->getParam('paymenttype') === 'Recurring subscription';
+    }
+
+    /**
+     * Whether the checkout should be embedded in an iframe rather than redirected to.
+     * Only one-off payments support the embedded flow; the recurring init endpoint does
+     * not sign an iframe flag, so recurring subscriptions always redirect.
+     *
+     * @return  bool
+     */
+    protected function iframeEnabled()
+    {
+        return $this->getParam('iframe_enabled') === 'Yes' && !$this->isRecurring();
     }
 
     /**

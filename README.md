@@ -23,6 +23,7 @@ Works with all five Vik plugins:
 ## Features
 
 - Hosted checkout redirect (`beginTransaction` → GetPayIn) with idempotent invoice creation
+- Optional **embedded checkout** — render the hosted checkout in an iframe on your site (one-off payments), with a signed `postMessage` return
 - Capture now, or **authorize** and capture later from the dashboard
 - Fixed **installments** (2–24) on the hosted checkout
 - **Recurring subscriptions** — creates a mandate and charges the order total every cycle
@@ -62,6 +63,7 @@ the **GetPayIn** gateway, and fill in:
 | **Hash token** | Your integration's signing secret. Used server-side only to sign requests and verify webhooks — never exposed to the browser. |
 | **Base URL** | GetPayIn host. Defaults to `https://pay.getpayin.com`. |
 | **Payment action** | `Capture` (charge immediately) or `Authorize` (hold now, capture later). |
+| **Embedded checkout** | `Yes` embeds the GetPayIn checkout in an iframe on your site instead of redirecting to it; `No` (default) redirects. Requires your integration **Origin** to exactly match this site's URL. One-off payments only — recurring subscriptions always redirect. |
 | **Installments** | `Yes` to offer fixed installments, with the **Number of installments** (2–24). Requires installments enabled on your account. |
 | **Payment type** | `One-off` for a single payment, or `Recurring subscription` to create a mandate. |
 | **Recurring interval / count / total cycles / consent text** | For recurring: the billing period (`month`/`week`/`day`/`year`), how many intervals between charges, an optional cap on the number of charges, and the consent statement shown to the payer. |
@@ -78,7 +80,10 @@ the **GetPayIn** gateway, and fill in:
    order. One-off payments go to `{base_url}/api/v2/integration/init`; recurring
    payments go to `{base_url}/api/v2/integration/recurring/init` (which also
    returns a `mandate_id`). The customer is redirected to the returned
-   `checkout_url`.
+   `checkout_url` — or, with **Embedded checkout** enabled for a one-off payment,
+   the plugin sends `iframe=1` on `init` and renders that `checkout_url` in an
+   iframe, then moves the top window to the return/error URL when the checkout
+   posts its signed `paylink_payment` message.
 2. **Payment** — The customer pays on GetPayIn's hosted checkout.
 3. **Confirmation** — GetPayIn calls the plugin's webhook. The plugin verifies the
    body signature (fail-closed) and, on `success=1` with a paid/authorized status,

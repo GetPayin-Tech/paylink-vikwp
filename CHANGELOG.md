@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0]
+
+### Added
+
+- **Embedded checkout (iframe)** — a new gateway option that shows the GetPayIn checkout inside your site in an iframe instead of redirecting to it. When enabled, the plugin sends `iframe=1` on the v2 `init` call so the returned (Laravel-signed) `checkout_url` carries the flag, embeds it, and listens for the checkout's signed `paylink_payment` postMessage to move the top window to the shop's return (success) or error (failure) URL. The listener accepts messages only from the configured GetPayIn origin, so a foreign frame cannot spoof an outcome. Applies to one-off payments only; recurring subscriptions always redirect (the recurring init endpoint does not sign the flag).
+
 ## [1.2.1]
 
 ### Fixed
