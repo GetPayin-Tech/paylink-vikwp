@@ -3,7 +3,7 @@
 Plugin Name:  GetPayIn for VikWP
 Plugin URI:   https://github.com/GetPayin-Tech/paylink-vikwp
 Description:  GetPayIn integration to collect payments through the Vik plugins (VikBooking, VikRentCar, VikRentItems, VikAppointments, VikRestaurants).
-Version:      1.2.1
+Version:      1.3.0
 Requires at least: 5.6
 Requires PHP: 7.2
 Author:       GetPayIn
@@ -23,7 +23,7 @@ require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'utils.php';
 
 define('VIKPAYLINK_LANG', basename(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'languages');
 
-define('VIKPAYLINKVERSION', '1.2.1');
+define('VIKPAYLINKVERSION', '1.3.0');
 
 add_action('init', function () {
     JFactory::getLanguage()->load('vikpaylink', VIKPAYLINK_LANG);
